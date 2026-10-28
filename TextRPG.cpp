@@ -1,6 +1,7 @@
 #include <iostream>
 using namespace std;
 
+
 enum CHRACTER_NUMBER
 {
 	KNIGHT = 1,
@@ -35,14 +36,35 @@ enum FIELD_STATE
 	FIELD_TOWN,
 };
 
+// padding = 16 + 4 + 4 + 4 + 4 + 4 + 4= 40
 struct ObjectInfo
 {
-	short type;
-	int maxHp;
+	char name[16];
+	int exp;
+	int level;
+	int type;
 	int hp;
 	int att;
 	int def;
 };
+
+// 초기 스탯 테이블(설계도)
+const ObjectInfo monsterStatTable[] =
+{
+	{"해골",	50, 1, 1, 80, 15, 5},			
+	{"슬라임", 80, 1, 2, 100, 10, 8},
+	{"오크", 110, 1, 3, 120, 11, 10 }			
+};
+
+
+// 초기 스탯 테이블(설계도)
+const ObjectInfo playerStatTable[] =
+{
+	{"기사", 0, 1, 1, 150, 15, 10},			
+	{"아처", 0, 1, 2, 120, 21, 7},			
+	{"마법사", 0, 1, 3, 100, 25, 5 }		
+};
+
 
 bool exitGame = false;
 bool isMadeCharacter = false;
@@ -55,76 +77,50 @@ void FightMonster(ObjectInfo* playerInfo, ObjectInfo* monsterInfo);
 void EnterField(ObjectInfo* playerInfo);
 void EnterTown(ObjectInfo* playerInfo);
 
+void CalculateLevelUpStat(ObjectInfo* playerInfo);
+
+// helper
+int GetCurrentMaxExp(int playerLevel){ return playerLevel * 100; };
+int GetPlayerMaxHP(ObjectInfo* playerInfo) 
+{ 
+	int baseHp = playerStatTable[playerInfo->type - 1].hp;
+	float growthRate = (playerInfo->level - 1) * 0.3f;
+
+	return baseHp + (int)(baseHp * growthRate);
+};
+
+
 void CreateMonster(ObjectInfo* monsterInfo)
 {
-	monsterInfo->type = 1 + (rand() % 3);
-	switch (monsterInfo->type)
-	{
-	case SKELETON:
-		cout << "해골 몬스터가 나타났다 !";
-		monsterInfo->maxHp = 80;
-		monsterInfo->hp = 80;
-		monsterInfo->att = 15;
-		monsterInfo->def = 5;
-		cout << "(HP: " << monsterInfo->hp << " / " << "ATT: " << monsterInfo->att << " / " << "DEF: " << monsterInfo->def << ")" << endl << endl;
-		break;
-	case SLIME:
-		cout << "슬라임 몬스터가 나타났다 ! ";
-		monsterInfo->maxHp = 100;
-		monsterInfo->hp = 100;
-		monsterInfo->att = 10;
-		monsterInfo->def = 8;
-		cout << "(HP: " << monsterInfo->hp << " / " << "ATT: " << monsterInfo->att << " / " << "DEF: " << monsterInfo->def << ")" << endl << endl;
-		break;
-	case ORC:
-		cout << "오크 몬스터가 나타났다 ! ";
-		monsterInfo->maxHp = 120;
-		monsterInfo->hp = 120;
-		monsterInfo->att = 11;
-		monsterInfo->def = 10;
-		cout << "(HP: " << monsterInfo->hp << " / " << "ATT: " << monsterInfo->att << " / " << "DEF: " << monsterInfo->def << ")" << endl << endl;
-		break;
-	}
+	int monsterType = monsterInfo->type;
+	monsterType = 1 + (rand() % 3);
+
+	// 몬스터 유형별 스탯 설정
+	*monsterInfo = monsterStatTable[monsterType - 1];
+
+	cout << "---------------------------------" << endl;
+	cout << monsterInfo->name << " 몬스터가 나타났다 ! " << endl;
+	cout << "Level : " << monsterInfo->level << endl;
+	cout << "Exp   : " << monsterInfo->exp << endl;
+	cout << "HP    : " << monsterInfo->hp << endl;
+	cout << "ATT   : " << monsterInfo->att << endl;
+	cout << "DEF   : " << monsterInfo->def << endl;
 }
 
 // 캐릭터 유형에 따라 스탯 배분
 void GenerateChracter(ObjectInfo* playerInfo)
 {
-	ObjectInfo tempInfo;
-	tempInfo.type = playerInfo->type;
+	int playerType = playerInfo->type;
 
 	int tempInput;
 	while (!isMadeCharacter)
 	{
-		switch (tempInfo.type)
-		{
-			// 전사 초기 스탯 생성
-		case CHRACTER_NUMBER::KNIGHT:
-			tempInfo.maxHp = 150;
-			tempInfo.hp = 150;
-			tempInfo.att = 15;
-			tempInfo.def = 10;
-			break;
-
-			// 아처 초기 스탯 생성
-		case CHRACTER_NUMBER::ARCHOR:
-			tempInfo.maxHp = 120;
-			tempInfo.hp = 120;
-			tempInfo.att = 21;
-			tempInfo.def = 7;
-			break;
-
-			// 메이지 초기 스탯 생성
-		case CHRACTER_NUMBER::MAGE:
-			tempInfo.maxHp = 100;
-			tempInfo.hp = 100;
-			tempInfo.att = 25;
-			tempInfo.def = 5;
-			break;
-		}
+		// 플레이어 유형별 스탯 설정
+		ObjectInfo tempInfo = playerStatTable[playerType - 1];
 
 		cout << "캐릭터 선택을 확정하시겠습니까 ?(확정 이후 중도 변경할 수 없습니다)" << endl << endl;
 		cout << "---------------------------------" << endl;
+		cout << "유형 : " << tempInfo.name << endl;
 		cout << "체력 : " << tempInfo.hp << endl;
 		cout << "공격력 : " << tempInfo.att << endl;
 		cout << "방어력 : " << tempInfo.def << endl;
@@ -192,6 +188,8 @@ void ChooseCharacter(ObjectInfo* playerInfo)
 // 몬스터와 전투
 void FightMonster(ObjectInfo* playerInfo, ObjectInfo* monsterInfo)
 {
+	short playerType = playerInfo->type;
+
 	while (true)
 	{
 		cout << "몬스터 남은 체력 : " << monsterInfo->hp << endl;
@@ -207,21 +205,57 @@ void FightMonster(ObjectInfo* playerInfo, ObjectInfo* monsterInfo)
 		if (monsterInfo->hp <= 0)
 		{
 			cout << "몬스터를 처치했습니다!" << endl;
+			playerInfo->exp += monsterInfo->exp;
+
+			// 레벨을 기준으로 최대 경험치 책정
+			while(playerInfo->exp >= GetCurrentMaxExp(playerInfo->level))
+			{
+
+				// 현재 경험치에서 최대 경험치를 뺌.
+				playerInfo->exp -= GetCurrentMaxExp(playerInfo->level);
+				CalculateLevelUpStat(playerInfo);
+				cout << "---------------------------------" << endl;
+				cout << "플레이어 레벨업 !" << endl << endl;
+				cout << "기본 스탯이 강해졌습니다 ! " << endl;
+				cout << "---------------------------------" << endl;
+
+			}
+
 			break;
 		}
 		int monsterDamage = (monsterInfo->att - playerInfo->def);
 		if (monsterDamage <= 0)
 			monsterDamage = 1;
+
 		playerInfo->hp -= monsterDamage;
 
 		if (playerInfo->hp <= 0)
 		{
+			// 죽었을 때의 패널티?
+			// 경험치 감소, 레벨 감소 등
+
 			cout << "플레이어는 사망했습니다. 광장으로 리스폰됩니다. " << endl << endl;
 			isPlayerDead = true;
 			break;
 		}
 	}
 }
+
+// 레벨업 구현
+void CalculateLevelUpStat(ObjectInfo* playerInfo)
+{
+	short playerType = playerInfo->type - 1;
+
+	// 플레이어 레벨업(레벨업을 한 이후의 
+	playerInfo->level += 1;
+
+	// 체력을 최대치로 채우며 최대 체력도 증가
+	playerInfo->hp = GetPlayerMaxHP(playerInfo);
+	playerInfo->att += (int)(playerStatTable[playerType].att * 0.2f);
+	playerInfo->def += (int)(playerStatTable[playerType].def * 0.2f);
+}
+ 
+
 // 필드 
 // - 몬스터와 전투
 // - 광장 이동
@@ -237,7 +271,14 @@ void EnterField(ObjectInfo* playerInfo)
 		cout << "필드에서는 몬스터를 처치할 수 있습니다." << endl;
 		cout << "---------------------------------" << endl;
 
-		cout << "[PLAYER] HP : " << playerInfo->hp << " / " << "ATT: " << playerInfo->att << " / " << "DEF: " << playerInfo->def << endl;
+		cout << "[PLAYER]" << endl; 
+		cout << "Name  : " << playerInfo->name << endl;
+		cout << "Level : " << playerInfo->level << endl;
+		cout << "Exp   : " << playerInfo->exp << endl;
+		cout << "HP    : " << playerInfo->hp << endl;
+		cout << "ATT   : " << playerInfo->att << endl;
+		cout << "DEF   : " << playerInfo->def << endl;
+
 		CreateMonster(&monsterInfo);
 
 		cout << "(1) 전투 하기 (2) 몬스터 재탐색 (3) 광장으로 이동" << endl;
@@ -275,7 +316,7 @@ void EnterTown(ObjectInfo* playerInfo)
 		if (playerInfo != nullptr && isPlayerDead)
 		{
 			cout << "플레이어의 체력이 회복되었습니다 ! " << endl;
-			playerInfo->hp = playerInfo->maxHp;
+			playerInfo->hp = GetPlayerMaxHP(playerInfo);
 			isPlayerDead = false;
 		}
 
@@ -307,7 +348,7 @@ void EnterTown(ObjectInfo* playerInfo)
 }
 int main()
 {
-	srand(time(0));
+	srand((unsigned int)time(0));
 
 	ObjectInfo player;
 	int input;
