@@ -8,14 +8,18 @@ flowchart TD
 	main --> EnterTown
     main --> ChooseCharacter
     
+    %% 캐릭터 선택 분기점
     ChooseCharacter --> GenerateChracter
     
+    %% 광장 분기점
     EnterTown --> EnterField
+    
+    %% 필드 분기점
     EnterField --> CreateMonster
     CreateMonster --> FightMonster
     
-    %% 분기 없이 핵심 흐름으로 직결
+    %% 몬스터 전투 분기점
     FightMonster --> CalculateLevelupStat
-    CalculateLevelupStat --> EnterField
-
+    FightMonster --> CheckDropItem
+    FightMonster -.-> EnterField
 ```
