@@ -1,27 +1,46 @@
 #include <iostream>
 using namespace std;
 
-
-// 인벤토리 시스템 -> 완?
 // 장비 시스템
-// 아이템 시스템
 
+// 장비 시스템 추가해야함
+// 장비 장착 시스템 !
+// 상점 시스템 구현
+// 인벤토리 매니저 구현
 
-// 플레이어의 인벤토리(장비 슬롯, 일반 슬롯 포함) 테이블이 존재한다.
-// 장비만을 저장하는 고유한 테이블이 존재한다.
-// 일반 아이템을 저장하는 고유한 테이블이 존재한다. 
-
-
-// 몬스터는 죽을 때 장비를 떨어뜨린다.
 // 플레이어는 장비를 착용할 수 있다.
-
 
 // 인벤토리에는 장비를 착용하는 슬롯과 아이템을 저장하는 슬롯이 개별로 있다
 
 
-// 아이템 조합 시스템 보류
-// 스킬은 보류
-// 아이템 크기 시스템, 무게 시스템 보류
+
+// 광장 -> 상점
+// 광장 -> 필드
+// 광장 -> 내 상태 보기
+
+// 상점
+// - 아이템 리스트 전부 출력
+// - 번호로 구매.
+// -- 개수 지정
+// --- 지정한 아이템 임시값으로 받아온 뒤 count 증가
+// --- 장비라면.. 지정한 개수만큼 인벤토리 슬롯 채우기?
+
+
+// 내 상태보기
+// - 캐릭터 스탯 확인
+// - 인벤토리 확인
+// - 현재 장비 확인
+// 인벤토리 - 장비 기능
+// - 현재 인벤토리 확인 
+// -- 현재 착용중인 장비 리스트
+// -- 보유중인 아이템 리스트?
+
+// 인벤토리 슬롯 번호 입력 ?
+// 장비를 장착하시겠습니까?
+// 장비를 교체하시겠습니까?
+
+
+// 상점은 나중에. 장비 먼저 ㄱㄱ
 
 enum CHRACTER_NUMBER
 {
@@ -47,6 +66,7 @@ enum LOBBY_STATE
 enum TOWN_STATE
 {
 	TOWN_FIELD = 1,
+	TOWN_MYROOM,
 	TOWN_LOBBY
 };
 
@@ -71,60 +91,74 @@ enum WEAPON_NUMBER
 	GOOD_WAND,
 };
 
-enum ARMOR_NUMBER
+enum ARMOR_HELMET_NUMBER
 {
-	BOTTOM_ARMOR = 200,
-	MID_ARMOR,
-	HIGH_ARMOR,
+	BOTTOM_HELMET = 200,
+	MID_HELMET,
+	HIGH_HELMET,
+};
+enum ARMOR_CHEST_NUMBER
+{
+	BOTTOM_CHEST = 300,
+	MID_CHEST,
+	HIGH_CHEST,
+};
+enum ARMOR_GAUNTLETS_NUMBER
+{
+	BOTTOM_GAUNTLETS = 400,
+	MID_GAUNTLETS,
+	HIGH_GAUNTLETS,
+};
+enum ARMOR_LEGGINGS_NUMBER
+{
+	BOTTOM_LEGGINGS = 500,
+	MID_LEGGINGS,
+	HIGH_LEGGINGS,
+};
+enum ARMOR_BOOTS_NUMBER
+{
+	BOTTOM_BOOTS = 600,
+	MID_BOOTS,
+	HIGH_BOOTS,
 };
 
 enum ITEM_TYPE
 {
 	ITEM = 0,
 	WEAPON,
-	ARMOR
+};
 
+enum ARMOR_TYPE
+{
+	HELMET = 2,
+	CHEST,
+	GAUNTLETS,
+	LEGGINGS,
+	BOOTS
 };
 
 // Item의 기본 정보를 담고있는 구조체
 struct ItemInfo
 {
-	// 인벤토리에 저장하기 위해서는 ID가 있어야할까
 	char name[64] = {};
+	int instanceId = -1;
 	int id = -1;
 	int price = 0;
 	int type = -1; 
 	int att = 0;
 	int hp = 0;
 	int def = 0;
+	bool stackable = true;
 };
 
-//// 장비(무기, 방어구 등)의 기본 정보를 담고있는 구조체
-//struct WeaponInfo : ItemInfo
-//{
-//	// 유형별로 착용 가능하도록 해야함. 즉 타입이 필요함
-//	int att;
-//};
-//
-//struct ArmorInfo : ItemInfo
-//{
-//	int hp;
-//	int def;
-//};
-
-// 스택과 힙의 차이를 알아야한다.
-// 스택은 함수가 끝나면 자동으로 사라짐..
-// 힙은 프로그래머가 delete 하기전에 계속 남아있음. 하지만 주소만 들고 다닐 수 있다 ! 즉 메모리 절약.
 struct InventorySlot
 {
 	ItemInfo item;
 	int count = 0;
-
 };
 
 // 장신구나 다른 개념들 보류 
 
-// padding = 16 + 4 + 4 + 4 + 4 + 4 + 4= 40
 struct CreatureInfo
 {
 	char name[16] = {};
@@ -146,8 +180,11 @@ struct DropItem
 
 struct PlayerInfo : CreatureInfo
 {
-	// 초기화 하지 않아도 내가 의도한 값으로 이미 채워져있음
-	InventorySlot inventory[10][10];
+	// 초기화 하더라도 0으로 밀지않음. 내가 의도한 값으로 채워져있음
+	InventorySlot inventory[10][10] = {};
+
+	// 장착한 장비의 정보?
+	ItemInfo equipmentList[6] = {};
 };
 
 struct MonsterInfo : CreatureInfo
@@ -182,36 +219,39 @@ const MonsterInfo monsterStatTable[] =
 		}, 3
 	}
 };
-	
 
 // 변수가 만들어지는 생성 시점에 초기화(중괄호 초기화)
-// 
 
 // 초기 플레이어 스탯 테이블(설계도)
 const PlayerInfo playerStatTable[] =
 {
-	{ "기사", 0, 1, 1, 150, 15, 10, {}, },
-	{ "아처", 0, 1, 2, 120, 21, 7, {},  },
-	{ "마법사", 0, 1, 3, 100, 25, 5, {}, }
+	{ "기사", 0, 1, 1, 150, 15, 10,{},{} },
+	{ "아처", 0, 1, 2, 120, 21, 7,{},{} },
+	{ "마법사", 0, 1, 3, 100, 25, 5,{},{} }
 };
-
 
 
 // 아이템 테이블 
+// 상점은 아이템 테이블의 이름을 전부 보여주는 기능
+// 그중 선택하면 복사본을 플레이어 자리에 놓기
 const ItemInfo itemTable[] =
 {
-	{"물건1", 0, 50, ITEM_TYPE::ITEM , 0, 0, 0},
-	{"물건2", 1, 100, ITEM_TYPE::ITEM, 0, 0, 0},
-	{"물건3", 2, 150, ITEM_TYPE::ITEM, 0, 0, 0},
+	{"물건1", -1, 0, 50, ITEM_TYPE::ITEM , 0, 0, 0, true},
+	{"물건2", -1, 1, 100, ITEM_TYPE::ITEM, 0, 0, 0, true},
+	{"물건3", -1, 2, 150, ITEM_TYPE::ITEM, 0, 0, 0},
 
-	{ "장검", WEAPON_NUMBER::LONG_SWORD, 100, ITEM_TYPE::WEAPON, 5, 0, 0 },
-	{ "좋은 활", WEAPON_NUMBER::GOOD_ARROW, 100, ITEM_TYPE::WEAPON, 7, 0, 0 },
-	{ "좋은 지팡이", WEAPON_NUMBER::GOOD_WAND, 100,ITEM_TYPE::WEAPON, 7, 0, 0 },
+	{ "장검", -1, WEAPON_NUMBER::LONG_SWORD, 100, ITEM_TYPE::WEAPON, 5, 0, 0, false},
+	{ "좋은 활", -1, WEAPON_NUMBER::GOOD_ARROW, 100, ITEM_TYPE::WEAPON, 7, 0, 0, false},
+	{ "좋은 지팡이", -1, WEAPON_NUMBER::GOOD_WAND, 100,ITEM_TYPE::WEAPON, 7, 0, 0, false},
 
-	{ "방어구1", ARMOR_NUMBER::BOTTOM_ARMOR, 100, ITEM_TYPE::ARMOR, 0, 10, 5 },
-	{ "방어구2", ARMOR_NUMBER::MID_ARMOR, 200, ITEM_TYPE::ARMOR, 0, 15, 10 },
-	{ "방어구3", ARMOR_NUMBER::HIGH_ARMOR, 300, ITEM_TYPE::ARMOR, 0, 20, 15 }
+	{ "헬멧 방어구", -1, ARMOR_HELMET_NUMBER::BOTTOM_HELMET, 100, ARMOR_TYPE::HELMET, 0, 10, 5, false},
+	{ "갑옷 방어구", -1, ARMOR_CHEST_NUMBER::BOTTOM_CHEST, 100, ARMOR_TYPE::CHEST, 0, 15, 5, false},
+	{ "팔목 방어구", -1, ARMOR_GAUNTLETS_NUMBER::BOTTOM_GAUNTLETS, 100, ARMOR_TYPE::GAUNTLETS, 0, 10, 5, false},
+	{ "바지 방어구", -1, ARMOR_LEGGINGS_NUMBER::BOTTOM_LEGGINGS, 100, ARMOR_TYPE::LEGGINGS, 0, 15, 5, false },
+	{ "신발 방어구", -1, ARMOR_BOOTS_NUMBER::BOTTOM_BOOTS, 100, ARMOR_TYPE::BOOTS, 0, 10, 5, false }
 };
+
+int newInstanceID = 0;
 
 bool exitGame = false;
 bool isMadeCharacter = false;
@@ -222,46 +262,42 @@ void GenerateCharacter(PlayerInfo* playerInfo);
 void ChooseCharacter(PlayerInfo* playerInfo);
 
 void CheckDropItem(PlayerInfo* playerInfo, MonsterInfo* monsterInfo);
+void CheckInventoryItemInfo(PlayerInfo* playerInfo, int itemIndex);
+
+void EquipArmor(PlayerInfo* playerInfo, int itemIndex);
+
+void CheckPlayerInventoryItem(PlayerInfo* playerInfo);
+void CheckPlayerEquipment(PlayerInfo* playerInfo);
+void CheckPlayerStat(PlayerInfo* playerInfo);
 
 void FightMonster(PlayerInfo* playerInfo, MonsterInfo* monsterInfo);
 void EnterField(PlayerInfo* playerInfo);
 void EnterTown(PlayerInfo* playerInfo);
+void EnterMyRoom(PlayerInfo* playerInfo);
 
-
+void CleanInventoryItem(ItemInfo* item);
 
 // Helper Function
-const ItemInfo GetItemInfo(int itemId);
+ItemInfo GetItemInfo(int itemId);
 int GetPlayerMaxHP(PlayerInfo* playerInfo);
+int GetMonsterDropItemId(const MonsterInfo* monsterInfo);
 int GetCurrentMaxExp(int playerLevel) { return playerLevel * 100; };
-//void CleanInventoryData(PlayerInfo* playerInfo);
-const int GetMonsterDropItemId(const MonsterInfo* monsterInfo);
 void CalculateLevelUpStat(PlayerInfo* playerInfo);
 
+bool CanStack(const ItemInfo& item) { return item.stackable; }
+
+
+void ChangeEquipment(PlayerInfo* playerInfo, ItemInfo* oldItem, ItemInfo* newItem);
+void EquipArmor(PlayerInfo* playerInfo, int itemIndex);
 
 // 자식 구조체는 더 덩치가 크다.
 // 즉 큰 애를 작은애로 반환하니까.. 잘릴 수 있음. 실제로 잘림.
-const ItemInfo GetItemInfo(int itemId)
+ItemInfo GetItemInfo(int itemId)
 {
 	for (int i = 0; i < sizeof(itemTable) / sizeof(itemTable[0]); i++)
 	{
-		// 일반 아이템
-		if (itemId >= 0 && itemId < 100)
-		{
-			if (itemId == itemTable[i].id)
-				return itemTable[i];
-		}
-		// 무기
-		else if (itemId >= 100 && itemId < 200)
-		{
-			if (itemId == itemTable[i].id)
-				return itemTable[i];
-		}
-		// 방어구
-		else if (itemId >= 200 && itemId < 300)
-		{
-			if (itemId == itemTable[i].id)
-				return itemTable[i];
-		}
+		if (itemId == itemTable[i].id)
+			return itemTable[i];
 	}
 	return ItemInfo{};
 }
@@ -271,8 +307,7 @@ int GetPlayerMaxHP(PlayerInfo* playerInfo)
 	float growthRate = (playerInfo->level - 1) * 0.3f;
 	return baseHp + (int)(baseHp * growthRate);
 };
-
-const int GetMonsterDropItemId(const MonsterInfo* monsterInfo)
+int GetMonsterDropItemId(const MonsterInfo* monsterInfo)
 {
 	// 드롭 테이블의 dropRate에는 확률이 들어가있다.
 	int randomRate = 1 + (rand() % 100);
@@ -283,19 +318,6 @@ const int GetMonsterDropItemId(const MonsterInfo* monsterInfo)
 	// 드롭 테이블을 순회하기
 	for (int i = 0; i < monsterInfo->dropCount; i++)
 	{
-		// 개별 독립 시행 방식
-		//{
-		//		// 1부터 100까지의 경우의 수
-		//		int randomRate = 1 + (rand() % 100);
-		//
-		//		// 0부터 100까지의 경우안에서, 15라는 숫자보다 작거나 같은 경우는 총 15개다. 즉 15%의 확률을 가진다.
-		//		if (randomRate <= monsterInfo->droptable[i].dropRate)
-		//		{
-		//			// return말고 인벤토리에 넣어야한다.
-		//			// 매개변수로 배열을 넘겨주거나.. 해야할 듯
-		//		} 
-		//}
-		
 		// 가중치 선택 방식
 		{
 			accumulateRate += monsterInfo->dropTable[i].dropRate;
@@ -311,7 +333,6 @@ const int GetMonsterDropItemId(const MonsterInfo* monsterInfo)
 	return -1;
 }
 
-// 마스터 테이블을 그대로 긁어와야하는 문제.
 
 // 아이템 타입 분리
 void CheckDropItem(PlayerInfo* playerInfo, MonsterInfo* monsterInfo)
@@ -325,21 +346,9 @@ void CheckDropItem(PlayerInfo* playerInfo, MonsterInfo* monsterInfo)
 	for (int i = 0; i < 10; i++)
 	{
 		for (int j = 0; j < 10; j++)
-		{
-			// 빈 슬롯인 경우에는 그냥 추가
-			if (playerInfo->inventory[i][j].item.id == -1)
-			{
-				playerInfo->inventory[i][j].item = GetItemInfo(droppedItemId);
-				playerInfo->inventory[i][j].count = 1;
-
-				cout << "---------------------------------" << endl;
-				cout << playerInfo->inventory[i][j].item.name << " 아이템을 흭득했다 !" << endl;
-				cout << "---------------------------------" << endl;
-
-				return;
-			}
-			// 이미 존재하는 아이템이라면 개수 추가
-			else if (playerInfo->inventory[i][j].item.id == droppedItemId)
+		{			
+			// 인벤토리에 드롭된 아이템이 이미 존재하고 드롭된 아이템이 스택이 가능한경우
+			if (playerInfo->inventory[i][j].item.id == droppedItemId && CanStack(GetItemInfo(droppedItemId)) == true)
 			{
 				playerInfo->inventory[i][j].count += 1;
 
@@ -350,8 +359,26 @@ void CheckDropItem(PlayerInfo* playerInfo, MonsterInfo* monsterInfo)
 
 				return;
 			}
+			// 빈 슬롯인 경우
+			else if(playerInfo->inventory[i][j].item.id == -1)
+			{
+				playerInfo->inventory[i][j].item = GetItemInfo(droppedItemId);
+				// 스택이 불가능한 경우에만 고유한 ID 부여
+				if (CanStack(playerInfo->inventory[i][j].item) == false)
+					playerInfo->inventory[i][j].item.instanceId = newInstanceID++;
+
+				playerInfo->inventory[i][j].count = 1;
+
+				cout << "---------------------------------" << endl;
+				cout << playerInfo->inventory[i][j].item.name << " 아이템을 흭득했다 !" << endl;
+				cout << "---------------------------------" << endl;
+
+				return;
+			}
 		}
 	}
+	// 다 돌았는데 빈 슬롯이 없는 경우
+	cout << "빈 슬롯이 없어 장비를 추가할 수 없습니다 !" << endl;
 }
 
 void CreateMonster(MonsterInfo* monsterInfo)
@@ -374,7 +401,7 @@ void CreateMonster(MonsterInfo* monsterInfo)
 }
 
 // 캐릭터 유형에 따라 스탯 배분
-void GenerateChracter(PlayerInfo* playerInfo)
+void GenerateCharacter(PlayerInfo* playerInfo)
 {
 	int playerType = playerInfo->type;
 
@@ -401,8 +428,6 @@ void GenerateChracter(PlayerInfo* playerInfo)
 		case 1:
 			// 임시 데이터를 원본 데이터로 복사
 			*playerInfo = tempInfo;
-			// 인벤토리 데이터 초기화
-			//CleanInventoryData(playerInfo);
 			isMadeCharacter = true;
 			break;
 		case 2:
@@ -439,7 +464,7 @@ void ChooseCharacter(PlayerInfo* playerInfo)
 		if (input >= 1 && input <= 3)
 		{
 			playerInfo->type = input;
-			GenerateChracter(playerInfo);
+			GenerateCharacter(playerInfo);
 		}
 		else
 		{
@@ -449,7 +474,7 @@ void ChooseCharacter(PlayerInfo* playerInfo)
 	}
 	cout << "---------------------------------" << endl;
 	cout << "캐릭터 선택이 완료되었습니다 !" << endl << endl;
-	cout << "광장으로 자동 이동됩니다. " << endl;
+	cout << "로비로 자동 이동됩니다. " << endl;
 	cout << "---------------------------------" << endl;
 }
 
@@ -472,8 +497,6 @@ void FightMonster(PlayerInfo* playerInfo, MonsterInfo* monsterInfo)
 
 		monsterInfo->hp -= playerDamage;
 
-
-		// 어떤 몬스터 고유의 아이템 드롭 확률을 통해 특정 아이템을 골라내고. 그걸 플레이어 인벤토리 빈자리에 넣는 로직
 
 		// 몬스터가 죽은 경우
 		if (monsterInfo->hp <= 0)
@@ -579,6 +602,478 @@ void EnterField(PlayerInfo* playerInfo)
 		}
 	}
 }
+void CheckInventoryItemInfo(PlayerInfo* playerInfo, int itemIndex)
+{
+	ItemInfo item = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
+
+	if (item.stackable)
+	{
+		cout << "해당 아이템의 상세 정보를 확인합니다" << endl << endl;
+		cout << "---------------------------------" << endl;
+		cout << "NAME  : " << item.name << endl;
+		cout << "COUNT : " << playerInfo->inventory[itemIndex/10][itemIndex%10].count << endl;
+		cout << "---------------------------------" << endl;
+	}
+	else
+	{
+		cout << "해당 장비의 상세 정보를 확인합니다" << endl << endl;
+		cout << "---------------------------------" << endl;
+		cout << "NAME : " << item.name << endl;
+		cout << "HP : " << item.hp << endl;
+		cout << "ATT : " << item.att << endl;
+		cout << "DEF : " << item.def << endl;
+		cout << "---------------------------------" << endl;
+	}
+}
+
+void CleanInventoryItem(ItemInfo* item)
+{
+	ItemInfo temp;
+	*item = temp;
+}
+
+void ChangeEquipment(PlayerInfo* playerInfo, ItemInfo* oldItem, ItemInfo* newItem)
+{
+	playerInfo->hp += ((newItem->hp - oldItem->hp) <= 0 ? 0 : (newItem->hp - oldItem->hp));
+	playerInfo->att += ((newItem->att - oldItem->att) <= 0 ? 0 : (newItem->att - oldItem->att));
+	playerInfo->def += ((newItem->def - oldItem->def) <= 0 ? 0 : (newItem->def - oldItem->def));
+
+	ItemInfo temp = *oldItem;
+	*oldItem = *newItem;
+	*newItem = temp;
+}
+
+void CheckChangeEquipment(PlayerInfo* playerInfo, ItemInfo* oldItem, ItemInfo* newItem)
+{
+	cout << "---------------------------------" << endl;;
+	cout << "이미 착용중인 장비가 존재합니다 !" << endl << endl;
+	cout << "장비를 교체하시겠습니까 ?" << endl;
+	cout << "---------------------------------" << endl;
+
+	cout << "이전 장비" << endl << endl;
+	cout << "---------------------------------" << endl;
+	cout << "NAME : " << oldItem->name  << endl;
+	cout << "HP : "	  << oldItem->hp  << endl;
+	cout << "ATT : "  << oldItem->att  << endl;
+	cout << "DEF : "  << oldItem ->def << endl;
+	cout << "---------------------------------" << endl << endl;
+
+	cout << "새로운 장비" << endl << endl;
+	cout << "---------------------------------" << endl;
+	cout << "NAME : " << newItem->name << endl;
+	cout << "HP :"	  << newItem->hp << endl;
+	cout << "ATT : "  << newItem->att << endl;
+	cout << "DEF : "  << newItem->def << endl;
+	cout << "---------------------------------" << endl << endl;
+	cout << "(1) 교체한다 (2) 교체하지않는다." << endl;
+	cout << ">";
+
+	int input;
+	cin >> input;
+
+	switch (input)
+	{
+		case 1:
+			cout << "장비를 교체합니다. 이전 장비는 새로운 장비가 있던 인벤토리 위치에 저장됩니다." << endl;
+			ChangeEquipment(playerInfo, oldItem, newItem);
+			cout << "장비 상태창으로 되돌아갑니다. " << endl;
+			break;
+		case 2:
+			cout << "장비를 교체하지 않습니다. 장비 상태창으로 되돌아갑니다. " << endl;
+			break;
+	}
+
+}
+void EquipArmor(PlayerInfo* playerInfo, int itemIndex)
+{
+	// 아이템의 원본 정보?
+	// 플레이어의 장비에 장착을 시켜야함.
+	// 선택한 아이템의 타입을 확인한다.
+	switch (playerInfo->inventory[itemIndex/10][itemIndex%10].item.type)
+	{
+		case ITEM_TYPE::WEAPON:
+			// 타입이 무기라면
+			if (playerInfo->equipmentList[0].id == -1)
+			{
+				playerInfo->equipmentList[0] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
+				cout << "새로운 장비를 장착하셨습니다 !" << endl;
+
+				// 스탯 반영
+				playerInfo->att += playerInfo->equipmentList[0].att;
+
+
+				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
+				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+			}
+			// 현재 무기칸이 비어져있지 않다면 교체 신호.
+			else
+			{
+				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
+				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[0], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+
+			}
+			break;
+		case ARMOR_TYPE::HELMET:
+			// 타입이 헬멧이라면 ?
+			// 현재 헬멧칸이 비었는지 확인
+			if (playerInfo->equipmentList[1].id == -1)
+			{
+				playerInfo->equipmentList[1] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
+				cout << "새로운 장비를 장착하셨습니다 !" << endl;
+
+				// 스탯 반영
+				playerInfo->hp += playerInfo->equipmentList[0].hp;
+				playerInfo->def += playerInfo->equipmentList[0].def;
+
+				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
+				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+			}
+			// 현재 헬멧칸이 비어져있지 않다면 교체 신호.
+			else
+			{
+				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
+				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[1], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+			}
+			break;
+		case ARMOR_TYPE::CHEST:
+			if (playerInfo->equipmentList[2].id == -1)
+			{
+				playerInfo->equipmentList[2] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
+				cout << "새로운 장비를 장착하셨습니다 !" << endl;
+
+				// 스탯 반영
+				playerInfo->hp += playerInfo->equipmentList[0].hp;
+				playerInfo->def += playerInfo->equipmentList[0].def;
+
+				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
+				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+			}
+			else
+			{
+				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
+				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[2], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+			}
+			break;
+		case ARMOR_TYPE::GAUNTLETS:
+
+			if (playerInfo->equipmentList[3].id == -1)
+			{
+				playerInfo->equipmentList[3] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
+				cout << "새로운 장비를 장착하셨습니다 !" << endl;
+
+				// 스탯 반영
+				playerInfo->hp += playerInfo->equipmentList[0].hp;
+				playerInfo->def += playerInfo->equipmentList[0].def;
+
+				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
+				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+			}
+			else
+			{
+				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
+				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[3], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+			}
+			break;
+		case ARMOR_TYPE::LEGGINGS:
+
+			if (playerInfo->equipmentList[4].id == -1)
+			{
+				playerInfo->equipmentList[4] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
+				cout << "새로운 장비를 장착하셨습니다 !" << endl;
+
+				// 스탯 반영
+				playerInfo->hp += playerInfo->equipmentList[0].hp;
+				playerInfo->def += playerInfo->equipmentList[0].def;
+
+				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
+				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+			}
+			else
+			{
+				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
+				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[4], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+			}
+			break;
+		case ARMOR_TYPE::BOOTS:
+			if (playerInfo->equipmentList[5].id == -1)
+			{
+				playerInfo->equipmentList[5] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
+				cout << "새로운 장비를 장착하셨습니다 !" << endl;
+
+				// 스탯 반영
+				playerInfo->hp += playerInfo->equipmentList[0].hp;
+				playerInfo->def += playerInfo->equipmentList[0].def;
+
+				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
+				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+			}
+			else
+			{
+				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
+				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[5], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+			}
+			break;
+		default:
+			cout << "장비가 아닙니다. " << endl;
+			break;
+	}
+}
+void CheckPlayerEquipment(PlayerInfo* playerInfo)
+{
+	bool exitEquipState = false;
+	while (!exitEquipState)
+	{
+		cout << "---------------------------------" << endl;
+		cout << "현재 플레이어의 장비를 확인 할 수 있습니다." << endl << endl;
+		cout << "---------------------------------" << endl;
+
+		cout << "[PLAYER]" << endl;
+		cout << "무기 : " << ((playerInfo->equipmentList[0].id == -1) ? "빈 슬롯" : playerInfo->equipmentList[0].name) << endl;
+		cout << "투구 : " << ((playerInfo->equipmentList[1].id == -1) ? "빈 슬롯" : playerInfo->equipmentList[1].name) << endl;
+		cout << "갑옷 : " << ((playerInfo->equipmentList[2].id == -1) ? "빈 슬롯" : playerInfo->equipmentList[2].name) << endl;
+		cout << "팔목 : " << ((playerInfo->equipmentList[3].id == -1) ? "빈 슬롯" : playerInfo->equipmentList[3].name) << endl;
+		cout << "다리 : " << ((playerInfo->equipmentList[4].id == -1) ? "빈 슬롯" : playerInfo->equipmentList[4].name) << endl;
+		cout << "신발 : " << ((playerInfo->equipmentList[5].id == -1) ? "빈 슬롯" : playerInfo->equipmentList[5].name) << endl;
+
+		// 현재 장비의 상태를 확인하는 기능도 추가해야함.
+
+		cout << "---------------------------------" << endl;
+		cout << "장비 리스트에서 다른 장비를 확인 하시겠습니까 ?" << endl << endl;
+		cout << "(1) 예 (2) 아니요" << endl;
+		cout << "---------------------------------" << endl;
+
+		int input;
+		cin >> input;
+
+		switch (input)
+		{
+			case 1:
+			{
+				// 현재 장비 리스트가 전부 뜸
+				int count = 0;
+				int armorMap[100] = {};
+				for (int i = 0; i < 10; i++)
+				{
+					for (int j = 0; j < 10; j++)
+					{
+						// 빈 슬롯이 아니고 겹칠 수 없는(장비)인 경우
+						if (playerInfo->inventory[i][j].item.id != -1 && !playerInfo->inventory[i][j].item.stackable)
+						{
+							cout << "[" << ++count << "] " << playerInfo->inventory[i][j].item.name << "\t";
+							// 실제 인벤토리 배열의 위치.
+							armorMap[count] = ((i * 10) + j);
+						}
+					}
+					cout << endl << endl;
+				}
+				if (count <= 0)
+				{
+					cout << "---------------------------------" << endl;
+					cout << "장비가 없습니다 ! 장비를 먼저 흭득해주세요. " << endl;
+					cout << "---------------------------------" << endl;
+					return;
+				}
+
+				cout << "---------------------------------" << endl;
+				cout << "장비를 선택하여 정보를 확인하거나, 장착할 수 있습니다." << endl;
+				cout << "장비 번호를 선택해주세요 !" << endl;
+				cout << "---------------------------------" << endl;
+				cout << ">";
+
+				int armorIndex;
+				cin >> armorIndex;
+				// 인벤토리 실제 인덱스
+				int realIndex = armorMap[armorIndex];
+
+				// 이 상태에서 특정 아이템(장비)를 골라야함.
+				// 골랐다고 가정. 그럼 해당 아이템의 정보를 가져온다.
+				// 
+				// 상세 정보를 확인할껀지, 장착할껀지 ?
+				cout << "---------------------------------" << endl;
+				cout << "장비 번호를 선택하셨습니다. 어떻게 하시겠습니까 ?" << endl;
+				cout << "(1) 상세 정보 확인 (2) 장착 하기" << endl;
+				cout << "---------------------------------" << endl;
+				cout << ">";
+
+				int input;
+				cin >> input;
+
+				switch (input)
+				{
+				case 1:
+					// 장비 상세 정보만 확인하고 나옴.
+					CheckInventoryItemInfo(playerInfo, realIndex);
+					break;
+				case 2:
+					// 장비를 착용하려고 시도.
+					EquipArmor(playerInfo, realIndex);
+					break;
+				}
+				break;
+			}
+			case 2:
+				cout << "개인룸으로 되돌아갑니다." << endl;
+				exitEquipState = true;
+				break;
+		}
+	}
+}
+
+void CheckPlayerInventoryItem(PlayerInfo* playerInfo)
+{
+	bool exitCheckInventoryState = false;
+	while (!exitCheckInventoryState)
+	{
+		cout << "---------------------------------" << endl;
+		cout << "현재 플레이어의 인벤토리를 확인 할 수 있습니다." << endl << endl;
+		cout << "---------------------------------" << endl;
+
+		int count = 0;
+		int itemMap[100] = {};
+		bool noneItem = true;
+		for (int i = 0; i < 10; i++)
+		{
+			for (int j = 0; j < 10; j++)
+			{
+				if (playerInfo->inventory[i][j].item.id == -1)
+				{
+					cout << "[" << ++count << "] " << "빈 슬롯 " << "\t";
+					continue;
+				}
+				else
+				{
+					// 아이템이 없는지 체크용
+					if(noneItem) 
+						noneItem = false;
+
+					cout << "[" << ++count << "] " << playerInfo->inventory[i][j].item.name << "\t";
+					itemMap[count] = ((i * 10) + j);
+				}
+				
+			}
+			cout << endl << endl;
+		}
+		if (noneItem)
+		{
+			cout << "---------------------------------" << endl;
+			cout << "아이템이 없습니다 ! 아이템을 먼저 흭득해주세요. " << endl;
+			cout << "---------------------------------" << endl;
+			return;
+		}
+
+		cout << "---------------------------------" << endl;
+		cout << "아이템을 선택하여 정보를 확인할 수 있습니다." << endl;
+		cout << "아이템을 선택하시겠습니까 ?" << endl;
+		cout << "(1) 예 (2) 아니요" << endl;
+		cout << "---------------------------------" << endl;
+		cout << ">";
+
+
+		int input;
+		cin >> input;
+
+		switch (input)
+		{
+			case 1:
+				{
+					// 여기 있는 인벤토리를 기준으로 선택.
+					// 분기점
+					// 아이템 상세 정보 확인(갯수 확인하기?)
+					cout << "---------------------------------" << endl;
+					cout << "아이템을 선택하여 정보를 확인할 수 있습니다." << endl;
+					cout << "아이템 번호를 선택해주세요 !" << endl;
+					cout << "---------------------------------" << endl;
+					cout << ">";
+
+					int itemIndex;
+					cin >> itemIndex;
+
+					int realIndex = itemMap[itemIndex];
+
+					cout << "---------------------------------" << endl;
+					cout << "아이템 번호를 선택하셨습니다. 어떻게 하시겠습니까 ?" << endl;
+					cout << "(1) 상세 정보 확인" << endl;
+					cout << "---------------------------------" << endl;
+					cout << ">";
+
+					int input;
+					cin >> input;
+
+					switch (input)
+					{
+					case 1:
+						CheckInventoryItemInfo(playerInfo, realIndex);
+						break;
+					}
+				}
+				break;
+			case 2:
+				cout << "개인룸으로 되돌아갑니다." << endl;
+				exitCheckInventoryState = true;
+				break;
+		}
+	}
+}
+
+
+void CheckPlayerStat(PlayerInfo* playerInfo)
+{
+	cout << "현재 플레이어의 스탯을 확인할 수 있습니다." << endl << endl;
+	// 현재 장비 확인과 스탯 확인?
+	cout << "---------------------------------" << endl;
+
+	cout << "[PLAYER]" << endl;
+	cout << "Name  : " << playerInfo->name << endl << endl;
+
+	cout << "Level : " << playerInfo->level << endl;
+	cout << "Exp   : " << playerInfo->exp << endl;
+	cout << "HP    : " << playerInfo->hp << endl;
+	cout << "ATT   : " << playerInfo->att << endl;
+	cout << "DEF   : " << playerInfo->def << endl;
+}
+
+
+void EnterMyRoom(PlayerInfo* playerInfo)
+{
+	bool exitMyRoom = false;
+	while (!exitMyRoom)
+	{
+		cout << "---------------------------------" << endl;
+		cout << "개인룸에 오신걸 환영합니다 !" << endl << endl;
+		cout << "확인하고싶은 부분을 선택해주세요." << endl;
+		cout << "---------------------------------" << endl;
+		cout << "(1) 현재 장비 확인 (2) 인벤토리 확인 (3) 내 스탯 확인 (4) 광장 이동" << endl;
+		cout << ">";
+
+		int input;
+		cin >> input;
+
+		switch (input)
+		{
+		case 1:
+			// 현재 장비를 확인한다.
+			CheckPlayerEquipment(playerInfo);
+			break;
+		case 2:
+			// 현재 인벤토리 확인한다.
+			CheckPlayerInventoryItem(playerInfo);
+			break;
+		case 3:
+			// 현재 플레이어의 스탯을 확인한다.
+			CheckPlayerStat(playerInfo);
+			break;
+		case 4:
+			// 광장으로 이동한다.
+			exitMyRoom = true;
+			break;
+		default:
+			cout << "잘못된 번호입니다. 다시 선택해주세요. " << endl;
+			continue;
+		}
+
+	}
+	
+}
 
 // 광장
 // - 전투 필드 이동
@@ -599,7 +1094,7 @@ void EnterTown(PlayerInfo* playerInfo)
 		cout << "광장에 오신걸 환영합니다 !" << endl << endl;
 		cout << "원하시는 행동을 선택해주세요." << endl;
 		cout << "---------------------------------" << endl;
-		cout << "(1) 필드 입장 (2) 로비로 이동" << endl;
+		cout << "(1) 필드 입장 (2) 개인룹 이동 (3) 로비로 이동" << endl;
 		cout << ">";
 
 		int input;
@@ -607,17 +1102,21 @@ void EnterTown(PlayerInfo* playerInfo)
 
 		switch (input)
 		{
-		case TOWN_STATE::TOWN_FIELD:
-			cout << "필드로 이동합니다." << endl;
-			EnterField(playerInfo);
-			break;
-		case TOWN_STATE::TOWN_LOBBY:
-			cout << "로비로 이동합니다." << endl;
-			exitLobby = true;
-			break;
-		default:
-			cout << "잘못된 번호입니다. 다시 선택해주세요. " << endl;
-			continue;
+			case TOWN_STATE::TOWN_FIELD:
+				cout << "필드로 이동합니다." << endl;
+				EnterField(playerInfo);
+				break;
+			case TOWN_STATE::TOWN_MYROOM:
+				cout << "개인룸으로 이동합니다." << endl;
+				EnterMyRoom(playerInfo);
+				break;
+			case TOWN_STATE::TOWN_LOBBY:
+				cout << "로비로 이동합니다." << endl;
+				exitLobby = true;
+				break;
+			default:
+				cout << "잘못된 번호입니다. 다시 선택해주세요. " << endl;
+				continue;
 		}
 	}
 }
@@ -640,36 +1139,38 @@ int main()
 		cout << "(1) 캐릭터 생성 (2) 광장 이동 (3) 게임 종료" << endl;
 		cout << ">";
 
+		// 문자 입력 시 무한 루프가 생김
+		// 굳이 당장 고칠 필요는 없어보임
 		cin >> input;
 
 		switch (input)
 		{
-		case LOBBY_STATE::LOBBY_CHOOSECHARACTER:
-			if (isMadeCharacter)
-			{
-				cout << "이미 생성된 캐릭터가 있습니다 !" << endl << endl;
-				cout << "광장으로 이동해주세요. " << endl;
+			case LOBBY_STATE::LOBBY_CHOOSECHARACTER:
+				if (isMadeCharacter)
+				{
+					cout << "이미 생성된 캐릭터가 있습니다 !" << endl << endl;
+					cout << "광장으로 이동해주세요. " << endl;
+					break;
+				}
+				ChooseCharacter(&player);
 				break;
-			}
-			ChooseCharacter(&player);
-			break;
 
-		case LOBBY_STATE::LOBBY_TOWN:
-			if (!isMadeCharacter)
-			{
-				cout << "현재 생성된 캐릭터가 없습니다." << endl << endl;
-				cout << "캐릭터를 먼저 생성해주세요." << endl;
+			case LOBBY_STATE::LOBBY_TOWN:
+				if (!isMadeCharacter)
+				{
+					cout << "현재 생성된 캐릭터가 없습니다." << endl << endl;
+					cout << "캐릭터를 먼저 생성해주세요." << endl;
+					break;
+				}
+				EnterTown(&player);
 				break;
-			}
-			EnterTown(&player);
-			break;
-		case LOBBY_STATE::LOBBY_GAMEEXIT:
-			cout << "게임을 종료합니다." << endl;
-			exitGame = true;
-			break;
-		default:
-			cout << "잘못된 번호입니다. 다시 선택해주세요" << endl;
-			continue;
+			case LOBBY_STATE::LOBBY_GAMEEXIT:
+				cout << "게임을 종료합니다." << endl;
+				exitGame = true;
+				break;
+			default:
+				cout << "잘못된 번호입니다. 다시 선택해주세요" << endl;
+				continue;
 		}
 
 	}
