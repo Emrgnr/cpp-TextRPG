@@ -9,17 +9,28 @@ flowchart TD
     main --> ChooseCharacter
     
     %% 캐릭터 선택 분기점
-    ChooseCharacter --> GenerateChracter
+    ChooseCharacter --> GenerateCharacter
+    GenerateCharacter -.-> EnterTown
     
     %% 광장 분기점
     EnterTown --> EnterField
+    EnterTown --> EnterMyRoom
     
     %% 필드 분기점
     EnterField --> CreateMonster
     CreateMonster --> FightMonster
     
+    %% 개인룸 분기점
+    EnterMyRoom --> CheckPlayerEquipment
+    EnterMyRoom --> CheckPlayerInventoryItem
+    EnterMyRoom --> CheckPlayerStat
+    
+    %% 플레이어 장비 확인
+    CheckPlayerEquipment --> EquipArmor
+    
     %% 몬스터 전투 분기점
     FightMonster --> CalculateLevelupStat
     FightMonster --> CheckDropItem
     FightMonster -.-> EnterField
+
 ```
