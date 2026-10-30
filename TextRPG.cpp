@@ -125,7 +125,7 @@ enum ARMOR_BOOTS_NUMBER
 enum ITEM_TYPE
 {
 	ITEM = 0,
-	WEAPON,
+	WEAPON = 1,
 };
 
 enum ARMOR_TYPE
@@ -689,133 +689,31 @@ void EquipArmor(PlayerInfo* playerInfo, int itemIndex)
 	// 아이템의 원본 정보?
 	// 플레이어의 장비에 장착을 시켜야함.
 	// 선택한 아이템의 타입을 확인한다.
-	switch (playerInfo->inventory[itemIndex/10][itemIndex%10].item.type)
+
+	// Weapon : 1
+	// Helmet : 2
+	// ...
+	// Boots : 6
+	int slotIndex = (playerInfo->inventory[itemIndex / 10][itemIndex % 10].item.type) - 1;
+	// 사용자가 고른 타입 번호와 장비 슬롯 배열의 인덱스를 매칭시킨다.
+
+	if (playerInfo->equipmentList[slotIndex].id == -1)
 	{
-		case ITEM_TYPE::WEAPON:
-			// 타입이 무기라면
-			if (playerInfo->equipmentList[0].id == -1)
-			{
-				playerInfo->equipmentList[0] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
-				cout << "새로운 장비를 장착하셨습니다 !" << endl;
+		playerInfo->equipmentList[slotIndex] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
+		cout << "새로운 장비를 장착하셨습니다 !" << endl;
 
-				// 스탯 반영
-				playerInfo->att += playerInfo->equipmentList[0].att;
+		// 스탯 반영
+		playerInfo->hp += playerInfo->equipmentList[slotIndex].hp;
+		playerInfo->att += playerInfo->equipmentList[slotIndex].att;
+		playerInfo->def += playerInfo->equipmentList[slotIndex].def;
 
-
-				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
-				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-			}
-			// 현재 무기칸이 비어져있지 않다면 교체 신호.
-			else
-			{
-				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
-				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[0], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-
-			}
-			break;
-		case ARMOR_TYPE::HELMET:
-			// 타입이 헬멧이라면 ?
-			// 현재 헬멧칸이 비었는지 확인
-			if (playerInfo->equipmentList[1].id == -1)
-			{
-				playerInfo->equipmentList[1] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
-				cout << "새로운 장비를 장착하셨습니다 !" << endl;
-
-				// 스탯 반영
-				playerInfo->hp += playerInfo->equipmentList[0].hp;
-				playerInfo->def += playerInfo->equipmentList[0].def;
-
-				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
-				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-			}
-			// 현재 헬멧칸이 비어져있지 않다면 교체 신호.
-			else
-			{
-				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
-				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[1], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-			}
-			break;
-		case ARMOR_TYPE::CHEST:
-			if (playerInfo->equipmentList[2].id == -1)
-			{
-				playerInfo->equipmentList[2] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
-				cout << "새로운 장비를 장착하셨습니다 !" << endl;
-
-				// 스탯 반영
-				playerInfo->hp += playerInfo->equipmentList[0].hp;
-				playerInfo->def += playerInfo->equipmentList[0].def;
-
-				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
-				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-			}
-			else
-			{
-				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
-				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[2], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-			}
-			break;
-		case ARMOR_TYPE::GAUNTLETS:
-
-			if (playerInfo->equipmentList[3].id == -1)
-			{
-				playerInfo->equipmentList[3] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
-				cout << "새로운 장비를 장착하셨습니다 !" << endl;
-
-				// 스탯 반영
-				playerInfo->hp += playerInfo->equipmentList[0].hp;
-				playerInfo->def += playerInfo->equipmentList[0].def;
-
-				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
-				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-			}
-			else
-			{
-				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
-				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[3], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-			}
-			break;
-		case ARMOR_TYPE::LEGGINGS:
-
-			if (playerInfo->equipmentList[4].id == -1)
-			{
-				playerInfo->equipmentList[4] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
-				cout << "새로운 장비를 장착하셨습니다 !" << endl;
-
-				// 스탯 반영
-				playerInfo->hp += playerInfo->equipmentList[0].hp;
-				playerInfo->def += playerInfo->equipmentList[0].def;
-
-				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
-				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-			}
-			else
-			{
-				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
-				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[4], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-			}
-			break;
-		case ARMOR_TYPE::BOOTS:
-			if (playerInfo->equipmentList[5].id == -1)
-			{
-				playerInfo->equipmentList[5] = playerInfo->inventory[itemIndex / 10][itemIndex % 10].item;
-				cout << "새로운 장비를 장착하셨습니다 !" << endl;
-
-				// 스탯 반영
-				playerInfo->hp += playerInfo->equipmentList[0].hp;
-				playerInfo->def += playerInfo->equipmentList[0].def;
-
-				// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
-				CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-			}
-			else
-			{
-				// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
-				CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[5], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
-			}
-			break;
-		default:
-			cout << "장비가 아닙니다. " << endl;
-			break;
+		// 인벤토리 아이템 삭제? -> 싹 밀어버리기.
+		CleanInventoryItem(&playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
+	}
+	else
+	{
+		// 교체 함수(장착중인 아이템과 인벤토리 아이템 교체)
+		CheckChangeEquipment(playerInfo, &playerInfo->equipmentList[5], &playerInfo->inventory[itemIndex / 10][itemIndex % 10].item);
 	}
 }
 void CheckPlayerEquipment(PlayerInfo* playerInfo)
