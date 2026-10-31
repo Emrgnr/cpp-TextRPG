@@ -15,22 +15,39 @@ flowchart TD
     %% 광장 분기점
     EnterTown --> EnterField
     EnterTown --> EnterMyRoom
+    EnterTown --> EnterShop
     
     %% 필드 분기점
     EnterField --> CreateMonster
     CreateMonster --> FightMonster
+    
+    %% 몬스터 전투 분기점
+    FightMonster --> CalculateLevelupStat
+    FightMonster --> CheckDropItem
+    FightMonster -.-> EnterField
     
     %% 개인룸 분기점
     EnterMyRoom --> CheckPlayerEquipment
     EnterMyRoom --> CheckPlayerInventoryItem
     EnterMyRoom --> CheckPlayerStat
     
-    %% 플레이어 장비 확인
+    %% 플레이어 장비 상호작용
     CheckPlayerEquipment --> EquipArmor
-    
-    %% 몬스터 전투 분기점
-    FightMonster --> CalculateLevelupStat
-    FightMonster --> CheckDropItem
-    FightMonster -.-> EnterField
+    CheckPlayerEquipment --> UnEquipArmor
+	
+	%% 플레이어 인벤토리 상호작용
+	CheckPlayerInventoryItem --> CheckInventoryItemInfo
+	CheckPlayerInventoryItem --> ChangeItemPosition
+	
+	%% 상점 분기점
+	EnterShop --> EnterItemBuyingState
+	EnterShop --> EnterItemSellingState
+	
+	%% 상점 구매 상호작용
+	EnterItemBuyingState --> BuyItemToShop
+	
+	%% 상점 판매 상호작용
+	EnterItemSellingState --> SellItemToShop
+	
 
 ```
