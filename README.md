@@ -38,6 +38,7 @@ flowchart TD
 	%% 플레이어 인벤토리 상호작용
 	CheckPlayerInventoryItem --> CheckInventoryItemInfo
 	CheckPlayerInventoryItem --> ChangeItemPosition
+	CheckPlayerInventoryItem --> DeleteInventoryItem
 	
 	%% 상점 분기점
 	EnterShop --> EnterItemBuyingState
@@ -48,6 +49,5 @@ flowchart TD
 	
 	%% 상점 판매 상호작용
 	EnterItemSellingState --> SellItemToShop
-	
 
 ```
