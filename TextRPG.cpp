@@ -306,7 +306,8 @@ void CheckPlayerStat(PlayerInfo* playerInfo);
 // MyRoom Helper
 // -- Inventory & Stat
 void CheckInventoryItemInfo(PlayerInfo* playerInfo, int itemIndex);
-void CheckInventoryItemPosition(PlayerInfo* playerInfo, int oldIndex, int newIndex, int itemCount);
+void CheckInventoryItemChangePosition(PlayerInfo* playerInfo, int oldIndex, int newIndex, int itemCount);
+void DeleteInventoryItem(PlayerInfo* playerInfo, int inventoryIndex, int deleteItemCount);
 void CleanInventoryItem(ItemInfo* item);
 void ChangeItemPosition(ItemInfo* oldItem, ItemInfo* newItem);
 bool CanStack(const ItemInfo& item) { return item.stackable; }
@@ -925,7 +926,7 @@ void CheckPlayerInventoryItem(PlayerInfo* playerInfo)
 
 					if (posModifyChoice == 1)
 					{
-						CheckInventoryItemPosition(playerInfo, realIndex, newIndex, moveItemCount);
+						CheckInventoryItemChangePosition(playerInfo, realIndex, newIndex, moveItemCount);
 					}
 					else if (posModifyChoice == 2)
 					{
@@ -941,8 +942,37 @@ void CheckPlayerInventoryItem(PlayerInfo* playerInfo)
 				break;
 				// 아이템 버리기
 				case 3:
+					int deleteItemCount = -1;
+					// 개수가 한 개를 초과하는 경우
+					if (playerInfo->inventory[realIndex / 10][realIndex % 10].count > 1)
+					{
+						while (deleteItemCount <= 0)
+						{
+							cout << "---------------------------------" << endl;;
+							cout << "현재 보유하고 있는 아이템의 총 개수가 " << playerInfo->inventory[realIndex / 10][realIndex % 10].count << "개 입니다" << endl;
+							cout << "몇 개를 버리시겠습니까 ?" << endl;
+							cout << "---------------------------------" << endl;
+							cout << ">";
+
+							int count;
+							cin >> count;
+
+							if (count <= 0)
+							{
+								cout << "잘못된 번호입니다. 다시 입력해주세요. " << endl;
+								continue;
+							}
+							else if (count > playerInfo->inventory[realIndex / 10][realIndex % 10].count)
+							{
+								cout << "현재 가지고있는 수량보다 많은 개수의 아이템을 버릴 수 없습니다. 다시 입력해주세요." << endl;
+								continue;
+							}
+							deleteItemCount = count;
+						}
+					}
+
 					cout << "---------------------------------" << endl;
-					cout << "선택한 아이템을 버리시겠습니까 ? (이 선택은 되돌릴 수 없습니다)" << endl;
+					cout << "선택한 아이템(들)을 버리시겠습니까 ? (이 선택은 되돌릴 수 없습니다)" << endl;
 					cout << "(1) 예 (2) 아니요" << endl;
 					cout << "---------------------------------" << endl;
 
@@ -951,7 +981,8 @@ void CheckPlayerInventoryItem(PlayerInfo* playerInfo)
 
 					if (deleteChoice == 1)
 					{
-						CleanInventoryItem(&playerInfo->inventory[realIndex / 10][realIndex % 10].item);
+						DeleteInventoryItem(playerInfo, realIndex, deleteItemCount);
+						
 					}
 					else if (deleteChoice == 2)
 					{
@@ -1022,12 +1053,53 @@ void CheckPlayerEquipment(PlayerInfo* playerInfo)
 
 		switch (choice)
 		{
-			// 장비 장착 해제
+		// 장비 장착 해제
 		case 1:
-			UnEquipArmor(playerInfo, choice);
-			break;
+		{
+			// 장비를 한개라도 장착하고있는지
+			bool noneEquip = false;
+			for (int i = 0; i < 6; i++)
+			{
+				// 한 개라도 빈 슬롯이 아니라면
+				if (playerInfo->equipmentList[i].id != -1)
+				{
+					break;
+				}
+				else
+				{
+					if (!noneEquip)
+						noneEquip = true;
+				}
+			}
+			// 전부 빈 슬롯이라면
+			if (noneEquip)
+			{
+				cout << "현재 착용중인 장비가 없습니다 !" << endl;
+				cout << "먼저 장비를 착용해주세요. " << endl;
+				break;
+			}
+			while (true)
+			{
+				cout << "장착 해제 할 장비 번호를 선택해주세요 !" << endl;
+				int index;
+				cin >> index;
 
-			// 장비 장착하기(교체 포함)
+				// 장비 번호중에 하나이고 빈 슬롯이 아닌 경우 
+				if ((index >= 1 && index <= 6) && playerInfo->equipmentList[index - 1].id != -1)
+				{
+					UnEquipArmor(playerInfo, index);
+					break;
+				}
+				else
+				{
+					cout << "장비를 확인할 수 없는 번호입니다. 다시 입력해주세요" << endl;
+				}
+			}
+		}
+
+		break;
+
+		// 장비 장착하기(교체 포함)
 		case 2:
 		{
 			// 현재 장비 리스트가 전부 뜸
@@ -1170,7 +1242,7 @@ void CheckInventoryItemInfo(PlayerInfo* playerInfo, int itemIndex)
 		cout << "---------------------------------" << endl;
 	}
 }
-void CheckInventoryItemPosition(PlayerInfo* playerInfo, int oldIndex, int newIndex, int itemCount)
+void CheckInventoryItemChangePosition(PlayerInfo* playerInfo, int oldIndex, int newIndex, int itemCount)
 {
 	// newIndex는 새로 이동할 위치의 인덱스
 	// oldIndex는 기존에 있던 아이템의 위치 인덱스
@@ -1201,6 +1273,22 @@ void CheckInventoryItemPosition(PlayerInfo* playerInfo, int oldIndex, int newInd
 	// 아이템 위치 이동
 	// 새롭게 이동할 공간이 빈슬롯이라면, 이전에 있던 위치가 빈슬롯으로 바뀜. 빈슬롯 위치는 이동한 아이템으로 채워진다.
 	ChangeItemPosition(&playerInfo->inventory[oldIndex / 10][oldIndex % 10].item, &playerInfo->inventory[newIndex / 10][newIndex % 10].item);
+}
+void DeleteInventoryItem(PlayerInfo* playerInfo, int inventoryIndex, int deleteItemCount)
+{
+	// 버리려는 아이템 개수가 한 개보다 많다면
+	if (deleteItemCount > 1)
+	{
+		// 버릴 아이템 개수만큼만 제거
+		playerInfo->inventory[inventoryIndex / 10][inventoryIndex % 10].count -= deleteItemCount;
+		// 만약 버린 이후에 개수가 0개라면 날리기
+		if (playerInfo->inventory[inventoryIndex / 10][inventoryIndex % 10].count <= 0)
+		{
+			CleanInventoryItem(&playerInfo->inventory[inventoryIndex / 10][inventoryIndex % 10].item);
+			return;
+		}
+	}
+	CleanInventoryItem(&playerInfo->inventory[inventoryIndex / 10][inventoryIndex % 10].item);
 }
 void CleanInventoryItem(ItemInfo* item)
 {
@@ -1567,7 +1655,7 @@ void BuyItemToShop(PlayerInfo* playerInfo, int realIndex, int buyCount)
 			if (playerInfo->inventory[i][j].item.id == itemTable[realIndex].id && itemTable[realIndex].stackable)
 			{
 				// 구매한 아이템 개수가 여러개라면
-				if (buyCount > 0)
+				if (buyCount > 1)
 				{
 					playerInfo->money -= (itemTable[realIndex].price * buyCount);
 					playerInfo->inventory[i][j].count += buyCount;
@@ -1581,7 +1669,7 @@ void BuyItemToShop(PlayerInfo* playerInfo, int realIndex, int buyCount)
 			else if (playerInfo->inventory[i][j].item.id == -1)
 			{
 				// 구매한 개수가 여러개라면
-				if (buyCount > 0)
+				if (buyCount > 1)
 				{
 					playerInfo->money -= (itemTable[realIndex].price * buyCount);
 					playerInfo->inventory[i][j].item = itemTable[realIndex];
